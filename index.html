@@ -1,65 +1,43 @@
-// Import required AWS SDK clients and commands for Node.js
-import { PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { PublishCommand } from "@aws-sdk/client-sns";
-import { snsClient } from "../libs/snsClient.js";
-import { dynamoClient } from "../libs/dynamoClient.js";
-
-export const submitData = async () => {
-  //Set the parameters
-  // Capture the values entered in each field in the browser (by id).
-  const id = document.getElementById("id").value;
-  const title = document.getElementById("title").value;
-  const name = document.getElementById("name").value;
-  const body = document.getElementById("body").value;
-  //Set the table name.
-  const tableName = "Items";
-
-  //Set the parameters for the table
-  const params = {
-    TableName: tableName,
-    // Define the attributes and values of the item to be added. Adding ' + "" ' converts a value to
-    // a string.
-    Item: {
-      id: { N: id + "" },
-      title: { S: title + "" },
-      name: { S: name + "" },
-      body: { S: body + "" },
-    },
-  };
-  // Check that all the fields are completed.
-  if (id != "" && title != "" && name != "" && body != "") {
-    try {
-      //Upload the item to the table
-      await dynamoClient.send(new PutItemCommand(params));
-      alert("Data added to table.");
-      try {
-        // Create the message parameters object.
-        const messageParams = {
-          Message: "A new item with ID value was added to the DynamoDB",
-          PhoneNumber: "PHONE_NUMBER", //PHONE_NUMBER, in the E.164 phone number structure.
-          // For example, ak standard local formatted number, such as (415) 555-2671, is +14155552671 in E.164
-          // format, where '1' in the country code.
-        };
-        // Send the SNS message
-        const data = await snsClient.send(new PublishCommand(messageParams));
-        console.log(
-          "Success, message published. MessageID is " + data.MessageId
-        );
-      } catch (err) {
-        // Display error message if error is not sent
-        console.error(err, err.stack);
-      }
-    } catch (err) {
-      // Display error message if item is no added to table
-      console.error(
-        "An error occurred. Check the console for further information",
-        err
-      );
-    }
-    // Display alert if all field are not completed.
-  } else {
-    alert("Enter data in each field.");
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="text/javascript" src="./main.js"></script>
+<h1 style="color:black;text-align:center;font-family:Arial">Honest Feedback</h1>
+<style>
+  body {
+    background-image: linear-gradient(to bottom right, #05c785, #E8FDE3);
+    background-repeat: no-repeat; /* this is so that it doesnt repeat the background multiple times*/
+    background-attachment: fixed; /*this is to stretch the background*/
   }
-};
-// Expose the function to the browser
-window.submitData = submitData;
+  img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+<img src="data:image/png;base64,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" 
+ style="width:50%;">
+<P></P>
+<body>
+  <table class="center">
+    <tr>  
+      <td>Feedback:</td>
+        <td><input type="text" id="Feedback" name="Feedback"/></td>
+    </tr>
+        <td></td>
+        <td><button type="button" onclick="submitData();">Submit</button></td>
+        <script src="./main.js"></script>
+    </tr>
+</table>
+
+
+</body>
+
+
+</html>
+
